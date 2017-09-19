@@ -1062,7 +1062,7 @@ function postRelated(a, retur){
                           for(var r = 0; r < list.length; r++){
                           	ret.push(list[r][0]);
                           }
-                          if(retur)retur(ret);
+                          if(retur)retur(ret.slice(0,10));
                           console.log(ret);  
                           //try{
                            //var o = {}

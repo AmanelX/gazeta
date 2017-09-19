@@ -650,7 +650,7 @@ function pArt(news, categories){
   if(news.body)
     try{
       var din = news.body.indexOf(news.date);
-      if(din > -1)news.bogidy.splice(din,1);
+      if(din > -1)news.body.splice(din,1);
       din = news.body.indexOf(news.title);
       if(din > -1)news.body.splice(din,1);   
       for(var x = 0; x < news.body.length; x++){
@@ -691,10 +691,12 @@ function pArt(news, categories){
     //news.lang =  'am';
     db.ref('/ethiopia/links/'+hash).set(link);
     db.ref('/ethiopia/newsL/'+hash).set(news);
+
     if(GAZETA.si || !GAZETA.force){
-     if(news.body){
-        news.body = news.body.toString().replace(/[,]+/g,' ').replace( /\r?\n|\r/g, '' ); 
-        news.hash = hash;
+      var tbi = news;
+     if(tbi.body){
+        tbi.body = news.body.toString().replace(/[,]+/g,' ').replace( /\r?\n|\r/g, '' ); 
+        tbi.hash = hash;
       }
       console.log('added to search'+hash);
       store.push(news);  
