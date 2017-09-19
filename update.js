@@ -187,6 +187,7 @@ function covet_webp(dat, response){
     });
 
     stream.on('error', function (err){
+       bot.sendMessage(381956489,'4 '+dat.news.link); 
       consola.error("failed to stream image",err);
       response(dat.news, dat.cat);
     });
@@ -197,6 +198,7 @@ function covet_webp(dat, response){
       if(!err){
        sharp(body).webp().on('error',function(err) {
                               consola.info('Error converting to webp',dat.val);
+                              bot.sendMessage(381956489,'3 '+dat.news.link);  
                               not_converted = true;
                               response(dat.news,dat.cat);
                             }).pipe(stream);
@@ -210,11 +212,12 @@ function covet_webp(dat, response){
         consola.info("downloaded image. Converting to webp", dat.val); 
          sharp(body).webp().on('error',function(err) {
                                 consola.info('Error converting to webp',dat.val);
+                                 bot.sendMessage(381956489,'2 '+dat.news.link);  
                                 not_converted = true;
                                 response(dat.news,dat.cat);
                               }).pipe(stream);
         }
-       else {consola.info("could not retrieve image ",err.message); response(dat.news, dat.cat);}
+       else {consola.info("could not retrieve image ",err.message); bot.sendMessage(381956489,'1 '+dat.news.link); response(dat.news, dat.cat);}
      });
     }
    });
@@ -267,7 +270,7 @@ function fetch(template, link,source,response, body, cat,covet_web){
                       consola.info(items);
                       continue;
                     }
-                    console.log(container.innerHTML);
+                    //console.log(container.innerHTML);
                     if(which===-1) which = 0; 
                     var val ;
                     if(item.startsWith('cover')){
@@ -647,7 +650,7 @@ function pArt(news, categories){
   if(news.body)
     try{
       var din = news.body.indexOf(news.date);
-      if(din > -1)news.body.splice(din,1);
+      if(din > -1)news.bogidy.splice(din,1);
       din = news.body.indexOf(news.title);
       if(din > -1)news.body.splice(din,1);   
       for(var x = 0; x < news.body.length; x++){
@@ -660,8 +663,7 @@ function pArt(news, categories){
       }   
     }catch(e){consola.error("csynop",e); }
   //db.ref('/ethiopia/').set({}); return;
-  console.log(news);
-  if(Object.keys(news).length<=4 || !news.title) return; try{delete news.failcount;}catch(e){}
+  if(Object.keys(news).length<=4 || !news.title) {return; bot.sendMessage(381956489,news.title+news.link); }try{delete news.failcount;}catch(e){}
    try{
       //var article = '<b>'+news.title+'</b>\n'+ (news.synop?'<pre>'+news.synop+'</pre>':  (news.body && news.body.length > 0  ? news.body[0]:''));
         //         article += '\n<a href="'+ news.link +'">Open in Browser</a>\nposted a new article!'; 
@@ -689,6 +691,14 @@ function pArt(news, categories){
     //news.lang =  'am';
     db.ref('/ethiopia/links/'+hash).set(link);
     db.ref('/ethiopia/newsL/'+hash).set(news);
+    if(GAZETA.si || !GAZETA.force){
+     if(news.body){
+        news.body = news.body.toString().replace(/[,]+/g,' ').replace( /\r?\n|\r/g, '' ); 
+        news.hash = hash;
+      }
+      console.log('added to search'+hash);
+      store.push(news);  
+    }
     //+link.replace(/\.|\//g,'').hashCode(
     //db.ref('/ethiopia/newsL/')).push(news); 
     db.ref('/ethiopia/source/'+source+'/'+hash).set(news.timestamp);

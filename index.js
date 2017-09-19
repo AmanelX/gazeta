@@ -294,6 +294,7 @@ var searchoptions = {
     batchSize: 1000,
     fieldedSearch: true,
     fieldOptions: {},
+    appendOnly: true,
     preserveCase: false,
     storeable: true,
     searchable: true,
@@ -301,9 +302,12 @@ var searchoptions = {
     logLevel: 'error',
     nGramLength: 7,
     nGramSeparator: ' ',
-    separator: /[' ፥«»፣።.,\-|(\n)]+/,
+    separator: /[' ፥«»፣።.,|(\n)]+/,
     stopwords:sw.en,
 };
+
+
+
 //firebaseCache.put('all',[]);
 app.use(express.static(__dirname + "/public"));
 const { JSDOM } = require("jsdom");
@@ -316,6 +320,14 @@ fs.stat('news', function(err, stat) {
 });
 var Searchindex ;
 
+var SearchIndex = require('search-index');
+SearchIndex(searchoptions, function(err, inde) {
+    Searchindex = inde; 
+    //ll.tellMeAboutMySearchIndex(function (err, info) {
+  //console.log(info)
+//})
+});
+
 String.prototype.hashCode = function() {
   var hash = 0, i, chr;
   if (this.length === 0) return hash;
@@ -327,13 +339,9 @@ String.prototype.hashCode = function() {
   return hash;
 };
 
-var SearchIndex = require('search-index');
-var ll = SearchIndex(searchoptions, function(err, inde) {
-    Searchindex = inde; 
-});
 
-const Readable = require('stream').Readable
-const s = new Readable( {objectMode: true} )
+const Readable = require('stream').Readable;
+var store = new Readable( {objectMode: true} );
 
 //____________----------------------_____________________-------------------------______________________---------------------________-
 
@@ -796,6 +804,10 @@ var startIndex = function(){
 };
 
 function update(){
+  store = new Readable( {objectMode: true} );
+  store.on('error',function (e){
+  	console.log(e);
+  })
   scrapper.seeds("all",function(seeds){
   consola.info('seeds',seeds);
   var nacount = 0;
@@ -823,12 +835,18 @@ function update(){
                else {
                  scrapper.postArt(res,cat);
                  nacount--;
-                
               }
                consola.info(nacount);
                if(nacount===0){
-                  setTimeout(update, 60000);
-                  consola.info("UPDATE DONE!");
+                  setTimeout(update, 100000);
+                  setTimeout(function (){
+                  	 try{
+                  	  store.push(null);  
+    				  store.pipe(Searchindex.defaultPipeline()).pipe(Searchindex.add()); 
+                  	  consola.info("UPDATE DONE!");
+                  	  startIndex();
+                  	 }catch(e){console.log(e);}
+                     }, 6000);
                   //setTimeout(
                   //startIndex();//,180000);
                   //buildSearchI();
@@ -851,6 +869,7 @@ for(var l in stemplates.keys()){
 consola.info("START SCHEDULE");
 
 function start(){
+
   db.ref('/ethiopia/links/').once('value').then(function(snap){
   try{
   var links = Object.values(snap.val());
@@ -868,31 +887,32 @@ function start(){
 }
 //from scratch
 var allh = [];
-function buildSearchI(){
- db.ref('/ethiopia/newsL').once('value').then (function(snapshot){
+function buildSearchI(){	
+ db.ref('/ethiopia/newsL/').once('value').then (function(snapshot){
   try{
     var list = snapshot.val();
+      var i = 0;
       for(var hash in list){
        allh.push(hash); 
        if(GAZETA.force){
         var tbi = list[hash];
+        
         if(tbi.body){
           tbi.body = tbi.body.toString().replace(/[,]+/g,' ').replace( /\r?\n|\r/g, '' ); 
           tbi.hash = hash;
         }
-        s.push(tbi); 
+        //console.log(++i+':'+hash);
+        store.push(tbi); 
        }
       }
     if(GAZETA.force){
      console.log('finised building search!!');
-     s.push(null);  
-     s.pipe(Searchindex.defaultPipeline()).pipe(Searchindex.add()).on('close',function(){
-     	console.log('done');
-     }); 
+     store.push(null);  
+     store.pipe(Searchindex.defaultPipeline()).pipe(Searchindex.add());
     }   
     //startIndex();
    }catch(e){
-    console.log(e)
+    console.log(e);
    }
   });                              
 }
@@ -960,6 +980,7 @@ function getCats(hash){
 }*/
 
 function postRelated(a, retur){
+   console.log(a); 	
    searchbyid(a, function result(doc){
      if(doc && doc.title){
      var freq = new Map();
@@ -1075,7 +1096,7 @@ function postRelated(a, retur){
    });
 }
 
-var amblist = 'እና ምንም ጊዜ ብቻ ሳይሆን ነው ላይ የሚል  በዚህ ሲሆን ተነግሯል እንደ ያለውን';
+var amblist = 'እና ምንም ብቻ ሳይሆን ነው ላይ የሚል  በዚህ ሲሆን ተነግሯል እንደ ያለውን';
 function buildRelated(){
   for(var i=0; i<allh.length; i++){
      try{
@@ -1094,7 +1115,9 @@ if(GAZETA.si)buildSearchI();
 if(GAZETA.index)
   startIndex();
 if(GAZETA.start)start();
-//db.ref('/ethiopia/').set('');
+
+
+//db.ref('/ethiopia/').set({});
 //update();//, 180000);
 
 
