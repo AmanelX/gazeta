@@ -341,7 +341,7 @@ String.prototype.hashCode = function() {
 
 
 const Readable = require('stream').Readable;
-var store = new Readable( {objectMode: true} );
+global.store = new Readable( {objectMode: true} );
 
 //____________----------------------_____________________-------------------------______________________---------------------________-
 
@@ -1114,7 +1114,8 @@ function buildShort(){
 if(GAZETA.si)buildSearchI();
 if(GAZETA.index)
   startIndex();
-if(GAZETA.start)start();
+//if(GAZETA.start)
+	start();
 
 
 //db.ref('/ethiopia/').set({});
